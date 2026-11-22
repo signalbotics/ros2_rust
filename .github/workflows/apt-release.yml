@@ -44,9 +44,6 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-24.04
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
@@ -79,11 +76,21 @@ jobs:
       - uses: actions/upload-pages-artifact@v5
         with:
           path: site
+
+  # Separate job (GitHub's standard Pages pattern): deploying in the same job as the upload races
+  # the artifact listing and fails with 'No artifacts named "github-pages"'.
+  deploy:
+    needs: publish
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
       - id: deploy
         uses: actions/deploy-pages@v5
 
   verify:
-    needs: [validate, publish]
+    needs: [validate, deploy]
     strategy:
       fail-fast: false
       matrix:
