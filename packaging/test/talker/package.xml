@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>talker_rs</name>
+  <version>0.1.0</version>
+  <description>apt smoke test</description>
+  <maintainer email="dev@example.com">dev</maintainer>
+  <license>Apache-2.0</license>
+  <depend>rclrs</depend>
+  <depend>std_msgs</depend>
+  <export><build_type>ament_cargo</build_type></export>
+</package>

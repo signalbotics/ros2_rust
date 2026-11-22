@@ -1,0 +1,16 @@
+name: apt CI
+
+on:
+  push:
+    branches: [apt-release]
+  pull_request:
+    branches: [apt-release]
+  workflow_dispatch:
+
+concurrency:
+  group: apt-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: ./.github/workflows/apt-build.yml

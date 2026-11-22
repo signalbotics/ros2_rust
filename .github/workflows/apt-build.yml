@@ -1,0 +1,53 @@
+# Reusable: build + smoke-test the unofficial ROS 2 Rust .debs for every distro/arch.
+# Called by apt-ci.yml (every push/PR) and apt-release.yml (tags), so both run identical steps.
+name: apt build
+
+on:
+  workflow_call:
+    inputs:
+      rev:
+        description: Debian revision number (0~signalbotics<rev>)
+        type: string
+        default: "1"
+
+jobs:
+  matrix:
+    runs-on: ubuntu-24.04
+    outputs:
+      distros: ${{ steps.m.outputs.distros }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: m
+        run: |
+          source packaging/versions.env
+          echo "distros=$(printf '%s\n' $DISTROS | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: matrix
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: ${{ fromJson(needs.matrix.outputs.distros) }}
+        platform:
+          - { arch: amd64, runner: ubuntu-24.04 }
+          - { arch: arm64, runner: ubuntu-24.04-arm }
+    runs-on: ${{ matrix.platform.runner }}
+    name: ${{ matrix.distro }} / ${{ matrix.platform.arch }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build .debs
+        run: |
+          mkdir -p packaging/out/${{ matrix.distro }}
+          docker run --rm -e ROS_DISTRO=${{ matrix.distro }} -e REV=${{ inputs.rev }} \
+            -v "$PWD:/src/ros2_rust:ro" -v "$PWD/packaging/out/${{ matrix.distro }}:/out" \
+            ros:${{ matrix.distro }}-ros-base /src/ros2_rust/packaging/build-debs.sh
+      - name: Smoke test in clean container
+        run: |
+          docker run --rm -e ROS_DISTRO=${{ matrix.distro }} \
+            -v "$PWD:/src/ros2_rust:ro" -v "$PWD/packaging/out/${{ matrix.distro }}:/debs:ro" \
+            ros:${{ matrix.distro }}-ros-base /src/ros2_rust/packaging/test/test-debs.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.distro }}-${{ matrix.platform.arch }}
+          path: packaging/out/${{ matrix.distro }}/*.deb
+          if-no-files-found: error
