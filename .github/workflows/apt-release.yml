@@ -23,7 +23,7 @@ jobs:
       rev: ${{ steps.v.outputs.rev }}
       distros: ${{ steps.v.outputs.distros }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: v
         run: |
           tag="${GITHUB_REF_NAME#apt/v}"           # 0.8.0-1
@@ -48,8 +48,8 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
       - name: Import signing key
@@ -67,15 +67,20 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir -p dist && find artifacts -name '*.deb' -exec cp -n {} dist/ \;
+          # GitHub replaces '~' in asset names with '.', so rename first to keep SHA256SUMS accurate.
+          mkdir -p dist
+          find artifacts -name '*.deb' | while read -r f; do b="$(basename "$f")"; cp -n "$f" "dist/${b//\~/.}"; done
           (cd dist && sha256sum *.deb > SHA256SUMS)
-          gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" \
-            --notes "Unofficial ROS 2 Rust packages. Install: see packaging/README.md. Apt repo: https://signalbotics.github.io/ros2_rust"
-      - uses: actions/upload-pages-artifact@v3
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" \
+              --notes "Unofficial ROS 2 Rust packages. Install: see packaging/README.md. Apt repo: https://signalbotics.github.io/ros2_rust"
+          fi
+          gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site
       - id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   verify:
     needs: [validate, publish]
@@ -89,7 +94,7 @@ jobs:
     runs-on: ${{ matrix.platform.runner }}
     name: verify ${{ matrix.distro }} / ${{ matrix.platform.arch }} from live repo
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install from published apt repo and run node
         run: |
           for i in 1 2 3 4 5; do

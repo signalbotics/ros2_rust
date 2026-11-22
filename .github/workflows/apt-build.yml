@@ -16,7 +16,7 @@ jobs:
     outputs:
       distros: ${{ steps.m.outputs.distros }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: m
         run: |
           source packaging/versions.env
@@ -34,7 +34,7 @@ jobs:
     runs-on: ${{ matrix.platform.runner }}
     name: ${{ matrix.distro }} / ${{ matrix.platform.arch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build .debs
         run: |
           mkdir -p packaging/out/${{ matrix.distro }}
@@ -46,7 +46,7 @@ jobs:
           docker run --rm -e ROS_DISTRO=${{ matrix.distro }} \
             -v "$PWD:/src/ros2_rust:ro" -v "$PWD/packaging/out/${{ matrix.distro }}:/debs:ro" \
             ros:${{ matrix.distro }}-ros-base /src/ros2_rust/packaging/test/test-debs.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.distro }}-${{ matrix.platform.arch }}
           path: packaging/out/${{ matrix.distro }}/*.deb
