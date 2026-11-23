@@ -24,7 +24,7 @@ sudo curl -fsSL https://signalbotics.github.io/ros2_rust/signalbotics-ros2-rust.
   -o /usr/share/keyrings/signalbotics-ros2-rust.gpg
 echo "deb [signed-by=/usr/share/keyrings/signalbotics-ros2-rust.gpg] https://signalbotics.github.io/ros2_rust $(. /etc/os-release; echo $VERSION_CODENAME) main" \
   | sudo tee /etc/apt/sources.list.d/signalbotics-ros2-rust.list
-gpg --show-keys /usr/share/keyrings/signalbotics-ros2-rust.gpg   # expect fingerprint B7B8 4DFB BE6E 1520 3B96  2426 3CAB 06EC A0B1 86BD
+gpg --show-keys /usr/share/keyrings/signalbotics-ros2-rust.gpg   # expect fingerprint 3ECE A431 6291 2C5B FEC4  3FB6 1772 7F1B 7DC9 4DF7
 sudo apt update
 sudo apt install ros-$ROS_DISTRO-rclrs      # pulls colcon-ros-cargo + cargo-ament-build
 
@@ -126,7 +126,10 @@ The apt repo always contains the latest release only. Older `.deb`s stay on thei
 
 ### Signing key
 
-- The private key lives only in the repo secret `APT_SIGNING_KEY` (armored, no passphrase).
-- Fingerprint: `B7B8 4DFB BE6E 1520 3B96  2426 3CAB 06EC A0B1 86BD` (ed25519, created 2026-11-22, expires 2029-11-21).
+- The private key is in the repo secret `APT_SIGNING_KEY` (armored, no passphrase). A maintainer holds an offline
+  backup of the private key and its revocation certificate.
+- Previous key `B7B8 4DFB BE6E 1520 3B96  2426 3CAB 06EC A0B1 86BD` (2026-11-22) was replaced on 2026-11-23 because it
+  had no backup or revocation certificate. Users who installed before then must re-download the keyring.
+- Fingerprint: `3ECE A431 6291 2C5B FEC4  3FB6 1772 7F1B 7DC9 4DF7` (ed25519, created 2026-11-23, expires 2029-11-22).
 - The public key is published at `https://signalbotics.github.io/ros2_rust/signalbotics-ros2-rust.{gpg,asc}`.
 - To rotate: generate a new key, update the secret, cut a new `rev`, and tell users to re-download the keyring.
